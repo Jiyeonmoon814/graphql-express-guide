@@ -1,5 +1,11 @@
 const graphql = require("graphql");
-const { GraphQLString, GraphQLInt, GraphQLSchema, GraphQLObjectType } = graphql;
+const {
+  GraphQLString,
+  GraphQLInt,
+  GraphQLSchema,
+  GraphQLObjectType,
+  GraphQLList,
+} = graphql;
 const axios = require("axios");
 
 // user model ---------------------- User Type
@@ -9,16 +15,26 @@ const axios = require("axios");
 
 const CompanyType = new GraphQLObjectType({
   name: "Company",
-  fields: {
+  // by doing () => ({}), the function is defined but isn't executed till the entire file has been executed
+  fields: () => ({
     id: { type: GraphQLString },
     name: { type: GraphQLString },
     description: { type: GraphQLString },
-  },
+    users: {
+      // it should be a list of users in the company
+      type: new GraphQLList(UserType),
+      resolve(parentValue, args) {
+        return axios
+          .get(`http://localhost:3000/companies/${parentValue.id}/users`)
+          .then((res) => res.data);
+      },
+    },
+  }),
 });
 
 const UserType = new GraphQLObjectType({
   name: "User",
-  fields: {
+  fields: () => ({
     id: { type: GraphQLString },
     firstName: { type: GraphQLString },
     age: { type: GraphQLInt },
@@ -30,7 +46,7 @@ const UserType = new GraphQLObjectType({
           .then((res) => res.data);
       },
     },
-  },
+  }),
 });
 
 // allow graphQL to jump and land on a very specific node of graph of all of our data
